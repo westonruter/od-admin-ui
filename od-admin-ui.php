@@ -5,7 +5,7 @@
  * Description: Provides an admin UI to inspect URL Metrics.
  * Requires at least: 6.5
  * Requires PHP: 7.2
- * Version: 0.1.0
+ * Version: 0.1.1
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -57,7 +57,7 @@ add_filter(
 
 // Populate the custom columns.
 add_action(
-	'manage_' . POST_TYPE_SLUG . '_custom_column',
+	'manage_' . POST_TYPE_SLUG . '_posts_custom_column',
 	static function ( $column, $post_id ): void {
 		if ( 'modified_date' === $column ) {
 			echo esc_html(
