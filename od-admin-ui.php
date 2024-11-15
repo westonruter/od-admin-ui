@@ -5,7 +5,7 @@
  * Description: Provides an admin UI to inspect URL Metrics.
  * Requires at least: 6.5
  * Requires PHP: 7.2
- * Version: 0.1.1
+ * Version: 0.1.2
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -159,6 +159,24 @@ add_filter(
 		if ( POST_TYPE_SLUG === $post->post_type ) {
 			unset( $actions['trash'] ); // Remove the default Trash link.
 
+			if ( isset( $actions['edit'] ) ) {
+				$actions['edit'] = sprintf(
+					'<a href="%s" aria-label="%s">%s</a>',
+					get_edit_post_link( $post->ID ),
+					/* translators: %s: Post title. */
+					esc_attr( sprintf( __( 'Inspect &#8220;%s&#8221;', 'optimization-detective-admin-ui' ), get_the_title( $post ) ) ),
+					__( 'Inspect' )
+				);
+			}
+
+			$actions['view'] = sprintf(
+				'<a href="%s" rel="bookmark" aria-label="%s">%s</a>',
+				esc_url( get_the_title( $post ) ),
+				/* translators: %s: Post title. */
+				esc_attr( sprintf( __( 'View &#8220;%s&#8221;', 'optimization-detective-admin-ui' ), get_the_title( $post ) ) ),
+				__( 'View', 'default' )
+			);;
+
 			// Check if the user has the capability to delete the post.
 			if ( current_user_can( 'delete_post', $post->ID ) ) {
 				$actions['delete'] = sprintf(
@@ -180,7 +198,7 @@ add_filter(
 add_action(
 	'admin_menu',
 	static function (): void {
-		remove_meta_box( 'submitdiv', 'od_url_metrics', 'side' );
+		remove_meta_box( 'submitdiv', POST_TYPE_SLUG, 'side' );
 	}
 );
 
@@ -189,7 +207,7 @@ add_action(
 	'admin_head',
 	static function (): void {
 		$current_screen = get_current_screen();
-		if ( $current_screen && 'post' === $current_screen->base && 'od_url_metrics' === $current_screen->post_type ) {
+		if ( $current_screen && 'post' === $current_screen->base && POST_TYPE_SLUG === $current_screen->post_type ) {
 			?>
 			<script>
 				jQuery(document).ready(function ($) {
@@ -241,7 +259,7 @@ add_action(
 					echo '</details>';
 				}
 			},
-			'od_url_metrics',
+			POST_TYPE_SLUG,
 			'normal',
 			'high'
 		);
