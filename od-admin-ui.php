@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.3.1
+ * Version: 0.3.2
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -52,8 +52,8 @@ add_filter(
 		unset( $columns['date'] );
 
 		$columns['post_name'] = __( 'Slug', 'default' );
-		$columns['date']      = $date_column;
-		$columns['modified']  = __( 'Modified Date', 'optimization-detective-admin-ui' );
+		$columns['modified']  = __( 'Modified', 'optimization-detective-admin-ui' );
+		$columns['date']      = __( 'Created', 'optimization-detective-admin-ui' );
 
 		return $columns;
 	}
@@ -105,6 +105,24 @@ add_filter(
 		return $columns;
 	}
 );
+
+
+// Default to sorting posts by modified.
+add_action( 'pre_get_posts', static function( $query ) {
+	if ( ! is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	if ( POST_TYPE_SLUG === $query->get( 'post_type' ) ) {
+		// This is gross.
+		if ( ! isset( $_GET['orderby'] ) ) {
+			$query->set( 'orderby', 'modified' );
+			$query->set( 'order', 'DESC' );
+			$_GET['orderby'] = 'modified';
+		}
+	}
+} );
+
 
 // Show "View URL Metrics" instead of "Edit Post" on the edit post screen.
 add_filter(
