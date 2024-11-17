@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.3.2
+ * Version: 0.3.3
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -99,27 +99,32 @@ add_filter(
 	static function ( array $columns ): array {
 		$columns['modified']  = 'modified';
 		$columns['post_name'] = 'post_name';
+		// TODO: Apparently these $columns can be configured to eliminate the need to add the pre_get_posts action below so that the default sort is by Modified.
 		return $columns;
 	}
 );
 
-
 // Default to sorting posts by modified.
-add_action( 'pre_get_posts', static function( $query ) {
-	if ( ! is_admin() || ! $query->is_main_query() ) {
-		return;
-	}
+add_action(
+	'pre_get_posts',
+	static function ( $query ): void {
+		if ( ! is_admin() || ! $query->is_main_query() ) {
+			return;
+		}
+		$current_screen = get_current_screen();
+		if ( ! ( $current_screen instanceof WP_Screen ) || 'edit' !== $current_screen->base || POST_TYPE_SLUG !== $current_screen->post_type ) {
+			return;
+		}
 
-	if ( POST_TYPE_SLUG === $query->get( 'post_type' ) ) {
-		// This is gross.
-		if ( ! isset( $_GET['orderby'] ) ) {
+		// TODO: This is gross. There must be a better way to set the default sort via the filter above.
+		if ( POST_TYPE_SLUG === $query->get( 'post_type' )  && ! isset( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$query->set( 'orderby', 'modified' );
 			$query->set( 'order', 'DESC' );
 			$_GET['orderby'] = 'modified';
+			$_GET['order']   = 'desc';
 		}
 	}
-} );
-
+);
 
 // Show "View URL Metrics" instead of "Edit Post" on the edit post screen.
 add_filter(
