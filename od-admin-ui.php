@@ -245,7 +245,7 @@ add_action(
 					/**
 					 * Timestamp as a date.
 					 *
-					 * @var DateTime $date
+					 * @var \DateTime $date
 					 */
 					$date = DateTime::createFromFormat( 'U.u', (string) $url_metric->get_timestamp() );
 					if ( $timezone instanceof DateTimeZone ) {
