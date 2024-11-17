@@ -17,6 +17,8 @@
  * @package OptimizationDetective\AdminUi
  */
 
+// phpcs:disable WordPress.WP.I18n.TextDomainMismatch
+
 namespace OptimizationDetective\AdminUi;
 
 const POST_TYPE_SLUG = 'od_url_metrics';
@@ -27,6 +29,7 @@ use OD_URL_Metrics_Post_Type;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use WP_Screen;
 
 add_action(
 	'registered_post_type_' . POST_TYPE_SLUG,
@@ -165,7 +168,7 @@ add_filter(
 					get_edit_post_link( $post->ID ),
 					/* translators: %s: Post title. */
 					esc_attr( sprintf( __( 'Inspect &#8220;%s&#8221;', 'optimization-detective-admin-ui' ), get_the_title( $post ) ) ),
-					__( 'Inspect' )
+					__( 'Inspect', 'optimization-detective-admin-ui' )
 				);
 			}
 
@@ -175,7 +178,7 @@ add_filter(
 				/* translators: %s: Post title. */
 				esc_attr( sprintf( __( 'View &#8220;%s&#8221;', 'optimization-detective-admin-ui' ), get_the_title( $post ) ) ),
 				__( 'View', 'default' )
-			);;
+			);
 
 			// Check if the user has the capability to delete the post.
 			if ( current_user_can( 'delete_post', $post->ID ) ) {
@@ -194,7 +197,7 @@ add_filter(
 	2
 );
 
-// Remove the submit metabox.
+// Remove submit metabox.
 add_action(
 	'admin_menu',
 	static function (): void {
@@ -207,7 +210,7 @@ add_action(
 	'admin_head',
 	static function (): void {
 		$current_screen = get_current_screen();
-		if ( $current_screen && 'post' === $current_screen->base && POST_TYPE_SLUG === $current_screen->post_type ) {
+		if ( $current_screen instanceof WP_Screen && 'post' === $current_screen->base && POST_TYPE_SLUG === $current_screen->post_type ) {
 			?>
 			<script>
 				jQuery(document).ready(function ($) {
@@ -239,22 +242,28 @@ add_action(
 				$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
 
 				foreach ( $url_metrics as $url_metric ) {
-					/** @var DateTime $date */
-					$date = DateTime::createFromFormat( 'U.u', $url_metric->get_timestamp() );
-					$date->setTimezone( $timezone );
+					/**
+					 * Timestamp as a date.
+					 *
+					 * @var DateTime $date
+					 */
+					$date = DateTime::createFromFormat( 'U.u', (string) $url_metric->get_timestamp() );
+					if ( $timezone instanceof DateTimeZone ) {
+						$date->setTimezone( $timezone );
+					}
 					echo '<details open>';
 
 					echo '<summary>';
 					printf( '<time datetime="%s" title="%s">', esc_attr( $date->format( 'c' ) ), esc_attr( $date->format( 'Y-m-d H:i:s.u T' ) ) );
 					// translators: %s: human-readable time difference.
-					$formatted_date = sprintf( __( '%s ago', 'default' ), human_time_diff( $url_metric->get_timestamp() ) );
+					$formatted_date = sprintf( __( '%s ago', 'default' ), human_time_diff( (int) $url_metric->get_timestamp() ) );
 					echo esc_html( $formatted_date );
 					echo '</time>';
 					echo ' | ';
-					printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url_metric->get_url() ), __( 'View', 'default' ) );
+					printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url_metric->get_url() ), esc_html__( 'View', 'default' ) );
 					echo '</summary>';
 					echo '<pre style="overflow-x: auto;">';
-					echo esc_html( wp_json_encode( $url_metric->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+					echo esc_html( (string) wp_json_encode( $url_metric->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
 					echo '</pre>';
 					echo '</details>';
 				}
