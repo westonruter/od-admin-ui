@@ -48,13 +48,10 @@ add_action(
 add_filter(
 	'manage_' . POST_TYPE_SLUG . '_posts_columns',
 	static function ( $columns ) {
-		$date_column = $columns['date'];
 		unset( $columns['date'] );
-
 		$columns['post_name'] = __( 'Slug', 'default' );
 		$columns['modified']  = __( 'Modified', 'optimization-detective-admin-ui' );
 		$columns['date']      = __( 'Created', 'optimization-detective-admin-ui' );
-
 		return $columns;
 	}
 );
