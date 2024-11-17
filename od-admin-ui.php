@@ -386,10 +386,10 @@ add_action(
 							<td>
 								<?php
 								$lcp_element = $group->get_lcp_element();
-								if ( $lcp_element !== null ) {
+								if ( null !== $lcp_element ) {
 									echo '<code>' . esc_html( $lcp_element->get_xpath() ) . '</code>';
 								} else {
-									esc_html_e( 'Unknown', 'optimization-detective-admin-ui' );
+									esc_html_e( 'unknown', 'optimization-detective-admin-ui' );
 								}
 								?>
 							</td>
