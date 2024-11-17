@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.3.0
+ * Version: 0.3.1
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -457,9 +457,13 @@ add_action(
 		if ( ! ( $post instanceof WP_Post ) ) {
 			return;
 		}
+		$edit_link = get_edit_post_link( $post, 'raw' );
+		if ( null === $edit_link ) {
+			return;
+		}
 		?>
 		<script type="module">
-			console.log( '[Optimization Detective] Inspect URL Metrics: ' + <?php echo wp_json_encode( get_edit_post_link( $post, 'raw' ) ); ?> );
+			console.log( '[Optimization Detective] Inspect URL Metrics: ' + <?php echo wp_json_encode( $edit_link ); ?> );
 		</script>
 		<?php
 	}
