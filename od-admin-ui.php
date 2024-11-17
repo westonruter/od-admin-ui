@@ -240,12 +240,8 @@ add_action(
 				$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
 
 				foreach ( $url_metrics as $url_metric ) {
-					/**
-					 * Timestamp as a date.
-					 *
-					 * @var \DateTime $date
-					 */
 					$date = DateTime::createFromFormat( 'U.u', (string) $url_metric->get_timestamp() );
+					assert( $date instanceof DateTime );
 					if ( $timezone instanceof DateTimeZone ) {
 						$date->setTimezone( $timezone );
 					}
