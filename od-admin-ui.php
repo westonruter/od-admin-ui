@@ -48,9 +48,9 @@ add_filter(
 		$date_column = $columns['date'];
 		unset( $columns['date'] );
 
-		$columns['post_name']     = __( 'Slug', 'default' );
-		$columns['date']          = $date_column;
-		$columns['modified_date'] = __( 'Modified Date', 'optimization-detective-admin-ui' );
+		$columns['post_name'] = __( 'Slug', 'default' );
+		$columns['date']      = $date_column;
+		$columns['modified']  = __( 'Modified Date', 'optimization-detective-admin-ui' );
 
 		return $columns;
 	}
@@ -60,7 +60,7 @@ add_filter(
 add_action(
 	'manage_' . POST_TYPE_SLUG . '_posts_custom_column',
 	static function ( $column, $post_id ): void {
-		if ( 'modified_date' === $column ) {
+		if ( 'modified' === $column ) {
 			echo esc_html(
 				sprintf(
 					/* translators: 1: Post date, 2: Post time. */
@@ -97,34 +97,9 @@ add_filter(
 add_filter(
 	'manage_edit-' . POST_TYPE_SLUG . '_sortable_columns',
 	static function ( array $columns ): array {
-		$columns['modified_date'] = 'modified_date';
+		$columns['modified']  = 'modified';
+		$columns['post_name'] = 'post_name';
 		return $columns;
-	}
-);
-
-// Enable filtering by custom columns.
-add_filter(
-	'request',
-	static function ( $vars ): array {
-		if ( ! is_admin() || ! isset( $vars['order'], $vars['orderby'] ) ) {
-			return $vars;
-		}
-
-		if (
-			'modified_date' === $vars['orderby']
-			&&
-			in_array( $vars['order'], array( 'asc', 'desc' ), true )
-		) {
-			$vars = array_merge(
-				$vars,
-				array(
-					'orderby' => 'modified',
-					'order'   => $vars['order'],
-				)
-			);
-		}
-
-		return $vars;
 	}
 );
 
