@@ -17,8 +17,6 @@
  * @package OptimizationDetective\AdminUi
  */
 
-// phpcs:disable WordPress.WP.I18n.TextDomainMismatch
-
 namespace OptimizationDetective\AdminUi;
 
 const POST_TYPE_SLUG = 'od_url_metrics';
