@@ -199,7 +199,7 @@ add_action(
 );
 
 add_action(
-	'admin_print_styles-post.php',
+	'admin_head-post.php',
 	static function (): void {
 		global $typenow;
 		if ( POST_TYPE_SLUG !== $typenow ) {
@@ -207,6 +207,16 @@ add_action(
 		}
 		?>
 		<style>
+		#titlediv #title {
+			border: none;
+			background-color: transparent;
+			padding: 0;
+			margin: 0;
+			font-family: inherit;
+			color: inherit;
+			cursor: text;
+			font-weight: bold;
+		}
 		.device-emoji {
 			font-size: x-large;
 			display: inline-block;
@@ -229,7 +239,8 @@ add_action(
 		}
 		</style>
 		<?php
-	}
+	},
+	100
 );
 
 /**
@@ -305,6 +316,9 @@ add_action(
 					$timezone = null;
 				}
 				$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
+				usort( $url_metrics, static function ( $a, $b ) {
+					return $b->get_timestamp() <=> $a->get_timestamp();
+				} );
 
 				$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
 
@@ -329,7 +343,7 @@ add_action(
 						<td>
 							<?php
 							$lcp_element = $url_metrics_collection->get_common_lcp_element();
-							if ( $lcp_element !== null ) {
+							if ( null !== $lcp_element ) {
 								echo '<code>' . esc_html( $lcp_element->get_xpath() ) . '</code>';
 							} else {
 								esc_html_e( 'none', 'optimization-detective-admin-ui' );
