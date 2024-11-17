@@ -5,7 +5,7 @@
  * Description: Provides an admin UI to inspect URL Metrics.
  * Requires at least: 6.5
  * Requires PHP: 7.2
- * Version: 0.1.2
+ * Version: 0.2.0
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -272,5 +272,25 @@ add_action(
 			'normal',
 			'high'
 		);
+	}
+);
+
+// Add a link to the edit post link to the console (if WP_DEBUG is enabled).
+add_action(
+	'wp_print_footer_scripts',
+	static function (): void {
+		if ( ! od_can_optimize_response() || ! WP_DEBUG ) {
+			return;
+		}
+		$slug = od_get_url_metrics_slug( od_get_normalized_query_vars() );
+		$post = OD_URL_Metrics_Post_Type::get_post( $slug );
+		if ( ! ( $post instanceof WP_Post ) ) {
+			return;
+		}
+		?>
+		<script type="module">
+			console.log( '[Optimization Detective] Inspect URL Metrics: ' + <?php echo wp_json_encode( get_edit_post_link( $post, 'raw' ) ); ?> );
+		</script>
+		<?php
 	}
 );
