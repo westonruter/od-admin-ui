@@ -2,10 +2,11 @@
 /**
  * Plugin Name: Optimization Detective Admin UI
  * Plugin URI: https://gist.github.com/westonruter/004094f1d49b8b98492deb3dd20bc55e
- * Description: Provides an admin UI to inspect URL Metrics.
+ * Description: Provides an admin UI to inspect URL Metrics from the Optimization Detective plugin.
  * Requires at least: 6.5
  * Requires PHP: 7.2
- * Version: 0.2.0
+ * Requires Plugins: optimization-detective
+ * Version: 0.3.0
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -19,15 +20,17 @@
 
 namespace OptimizationDetective\AdminUi;
 
-const POST_TYPE_SLUG = 'od_url_metrics';
-
-use WP_Post_Type;
-use WP_Post;
-use OD_URL_Metrics_Post_Type;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use OD_URL_Metric_Group;
+use OD_URL_Metric_Group_Collection;
+use OD_URL_Metrics_Post_Type;
+use WP_Post;
+use WP_Post_Type;
 use WP_Screen;
+
+const POST_TYPE_SLUG = 'od_url_metrics';
 
 add_action(
 	'registered_post_type_' . POST_TYPE_SLUG,
@@ -195,18 +198,107 @@ add_action(
 	}
 );
 
+add_action(
+	'admin_print_styles-post.php',
+	static function (): void {
+		global $typenow;
+		if ( POST_TYPE_SLUG !== $typenow ) {
+			return;
+		}
+		?>
+		<style>
+		.device-emoji {
+			font-size: x-large;
+			display: inline-block;
+		}
+		.device-emoji-mobile {
+			font-size: large;
+		}
+		.device-emoji-phablet {
+			font-size: x-large;
+		}
+		.device-emoji-tablet {
+			font-size: xx-large;
+			transform: rotate(90deg);
+		}
+		.device-emoji-desktop {
+			font-size: xxx-large;
+		}
+		.url-metric:nth-child(odd) {
+			background-color: #f2f2f2; /* Light gray for odd rows */
+		}
+		</style>
+		<?php
+	}
+);
+
+/**
+ * Gets device slug.
+ *
+ * @param OD_URL_Metric_Group $group Group.
+ * @return string Slug.
+ */
+function get_device_slug( OD_URL_Metric_Group $group ): string {
+	if ( $group->get_minimum_viewport_width() === 0 ) {
+		return 'mobile';
+	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+		return 'desktop';
+	} elseif ( $group->get_minimum_viewport_width() > 600 ) {
+		return 'tablet';
+	} else {
+		return 'phablet';
+	}
+}
+
+/**
+ * Gets device label.
+ *
+ * @param OD_URL_Metric_Group $group Group.
+ * @return string Label.
+ */
+function get_device_label( OD_URL_Metric_Group $group ): string {
+	if ( $group->get_minimum_viewport_width() === 0 ) {
+		return __( 'mobile', 'optimization-detective-admin-ui' );
+	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+		return __( 'desktop', 'optimization-detective-admin-ui' );
+	} elseif ( $group->get_minimum_viewport_width() > 600 ) {
+		return __( 'tablet', 'optimization-detective-admin-ui' );
+	} else {
+		return __( 'phablet', 'optimization-detective-admin-ui' );
+	}
+}
+
+/**
+ * Gets device emoji character.
+ *
+ * @param OD_URL_Metric_Group $group Group.
+ * @return string Emoji.
+ */
+function get_device_emoji( OD_URL_Metric_Group $group ): string {
+	if ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+		return '💻';
+	} else {
+		return '📱';
+	}
+}
+
+/**
+ * Gets device emoji markup.
+ *
+ * @param OD_URL_Metric_Group $group Group.
+ */
+function print_device_emoji_markup( OD_URL_Metric_Group $group ): void {
+	printf( ' <span class="device-emoji device-emoji-%s">%s</span>', esc_attr( get_device_slug( $group ) ), esc_html( get_device_emoji( $group ) ) );
+}
+
 // Add metabox show the contents of the URL Metrics.
 add_action(
 	'add_meta_boxes',
 	static function (): void {
 		add_meta_box(
 			'od_url_metrics_big_metabox',
-			__( 'URL Metrics', 'optimization-detective' ),
+			__( 'Data', 'optimization-detective-admin-ui' ),
 			static function ( WP_Post $post ): void {
-				if ( ! class_exists( 'OD_URL_Metrics_Post_Type' ) ) {
-					return;
-				}
-
 				try {
 					$timezone = new DateTimeZone( get_option( 'timezone_string' ) );
 				} catch ( Exception $e ) {
@@ -214,13 +306,93 @@ add_action(
 				}
 				$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
 
+				$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
+
+				$true_label  = __( 'true', 'optimization-detective-admin-ui' );
+				$false_label = __( 'false', 'optimization-detective-admin-ui' );
+				?>
+				<table>
+					<tr>
+						<th><?php esc_html_e( 'Is every group complete:', 'optimization-detective-admin-ui' ); ?></th>
+						<td><?php echo esc_html( $url_metrics_collection->is_every_group_complete() ? $true_label : $false_label ); ?></td>
+					</tr>
+					<tr>
+						<th><?php esc_html_e( 'Is every group populated:', 'optimization-detective-admin-ui' ); ?></th>
+						<td><?php echo esc_html( $url_metrics_collection->is_every_group_populated() ? $true_label : $false_label ); ?></td>
+					</tr>
+					<tr>
+						<th><?php esc_html_e( 'Is any group populated:', 'optimization-detective-admin-ui' ); ?></th>
+						<td><?php echo esc_html( $url_metrics_collection->is_any_group_populated() ? $true_label : $false_label ); ?></td>
+					</tr>
+					<tr>
+						<th><?php esc_html_e( 'Common LCP element:', 'optimization-detective-admin-ui' ); ?></th>
+						<td>
+							<?php
+							$lcp_element = $url_metrics_collection->get_common_lcp_element();
+							if ( $lcp_element !== null ) {
+								echo '<code>' . esc_html( $lcp_element->get_xpath() ) . '</code>';
+							} else {
+								esc_html_e( 'none', 'optimization-detective-admin-ui' );
+							}
+							?>
+						</td>
+					</tr>
+				</table>
+
+				<h1><?php esc_html_e( 'Viewport Groups', 'optimization-detective-admin-ui' ); ?></h1>
+				<table>
+					<tr>
+						<th colspan="2"></th>
+						<th><?php esc_html_e( 'Min.', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Max.', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Count', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Complete', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'LCP Element', 'optimization-detective-admin-ui' ); ?></th>
+					</tr>
+					<?php foreach ( $url_metrics_collection as $group ) : ?>
+						<tr>
+							<th>
+								<?php echo esc_html( ucfirst( get_device_label( $group ) ) ); ?>
+							</th>
+							<td>
+								<?php print_device_emoji_markup( $group ); ?>
+							</td>
+							<td>
+								<?php echo esc_html( (string) $group->get_minimum_viewport_width() ); ?>
+							</td>
+							<td>
+								<?php echo esc_html( $group->get_maximum_viewport_width() === PHP_INT_MAX ? '∞' : (string) $group->get_maximum_viewport_width() ); ?>
+							</td>
+							<td>
+								<?php echo esc_html( (string) $group->count() ); ?>
+							</td>
+							<td>
+								<?php echo esc_html( $group->is_complete() ? $true_label : $false_label ); ?>
+							</td>
+							<td>
+								<?php
+								$lcp_element = $group->get_lcp_element();
+								if ( $lcp_element !== null ) {
+									echo '<code>' . esc_html( $lcp_element->get_xpath() ) . '</code>';
+								} else {
+									esc_html_e( 'Unknown', 'optimization-detective-admin-ui' );
+								}
+								?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</table>
+
+				<h1><?php esc_html_e( 'URL Metrics', 'optimization-detective' ); ?></h1>
+				<?php
+
 				foreach ( $url_metrics as $url_metric ) {
 					$date = DateTime::createFromFormat( 'U.u', (string) $url_metric->get_timestamp() );
 					assert( $date instanceof DateTime );
 					if ( $timezone instanceof DateTimeZone ) {
 						$date->setTimezone( $timezone );
 					}
-					echo '<details open>';
+					printf( '<details class="url-metric" open id="url-metric-%s">', esc_attr( $url_metric->get_uuid() ) );
 
 					echo '<summary>';
 					printf( '<time datetime="%s" title="%s">', esc_attr( $date->format( 'c' ) ), esc_attr( $date->format( 'Y-m-d H:i:s.u T' ) ) );
@@ -230,6 +402,21 @@ add_action(
 					echo '</time>';
 					echo ' | ';
 					printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url_metric->get_url() ), esc_html__( 'View', 'default' ) );
+					echo ' | ';
+					$group = $url_metrics_collection->get_group_for_viewport_width( $url_metric->get_viewport_width() );
+					esc_html_e( 'Viewport Group:', 'optimization-detective-admin-ui' );
+					echo ' ';
+					if ( $group->get_minimum_viewport_width() === 0 ) {
+						echo esc_html( '≤' . $group->get_maximum_viewport_width() . 'px' );
+					} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+						echo esc_html( '≥' . $group->get_minimum_viewport_width() . 'px' );
+					} else {
+						echo esc_html( $group->get_minimum_viewport_width() . 'px – ' . $group->get_maximum_viewport_width() . 'px' );
+					}
+
+					echo esc_html( ' (' . get_device_label( $group ) . ')' );
+					print_device_emoji_markup( $group );
+
 					echo '</summary>';
 					echo '<pre style="overflow-x: auto;">';
 					echo esc_html( (string) wp_json_encode( $url_metric->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
