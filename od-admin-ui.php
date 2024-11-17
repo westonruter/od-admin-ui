@@ -316,9 +316,12 @@ add_action(
 					$timezone = null;
 				}
 				$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
-				usort( $url_metrics, static function ( $a, $b ) {
-					return $b->get_timestamp() <=> $a->get_timestamp();
-				} );
+				usort(
+					$url_metrics,
+					static function ( $a, $b ) {
+						return $b->get_timestamp() <=> $a->get_timestamp();
+					}
+				);
 
 				$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
 
