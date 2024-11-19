@@ -11,7 +11,7 @@
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
- * Text Domain: optimization-detective-admin-ui
+ * Text Domain: od-admin-ui
  * Update URI: https://gist.github.com/westonruter/004094f1d49b8b98492deb3dd20bc55e
  * Gist Plugin URI: https://gist.github.com/westonruter/004094f1d49b8b98492deb3dd20bc55e
  *
@@ -50,8 +50,8 @@ add_filter(
 	static function ( $columns ) {
 		unset( $columns['date'] );
 		$columns['post_name'] = __( 'Slug', 'default' );
-		$columns['modified']  = __( 'Modified', 'optimization-detective-admin-ui' );
-		$columns['date']      = __( 'Created', 'optimization-detective-admin-ui' );
+		$columns['modified']  = __( 'Modified', 'od-admin-ui' );
+		$columns['date']      = __( 'Created', 'od-admin-ui' );
 		return $columns;
 	}
 );
@@ -163,8 +163,8 @@ add_filter(
 					'<a href="%s" aria-label="%s">%s</a>',
 					get_edit_post_link( $post->ID ),
 					/* translators: %s: Post title. */
-					esc_attr( sprintf( __( 'Inspect &#8220;%s&#8221;', 'optimization-detective-admin-ui' ), get_the_title( $post ) ) ),
-					__( 'Inspect', 'optimization-detective-admin-ui' )
+					esc_attr( sprintf( __( 'Inspect &#8220;%s&#8221;', 'od-admin-ui' ), get_the_title( $post ) ) ),
+					__( 'Inspect', 'od-admin-ui' )
 				);
 			}
 
@@ -172,7 +172,7 @@ add_filter(
 				'<a href="%s" rel="bookmark" aria-label="%s">%s</a>',
 				esc_url( get_the_title( $post ) ),
 				/* translators: %s: Post title. */
-				esc_attr( sprintf( __( 'View &#8220;%s&#8221;', 'optimization-detective-admin-ui' ), get_the_title( $post ) ) ),
+				esc_attr( sprintf( __( 'View &#8220;%s&#8221;', 'od-admin-ui' ), get_the_title( $post ) ) ),
 				__( 'View', 'default' )
 			);
 
@@ -289,13 +289,13 @@ function get_device_slug( OD_URL_Metric_Group $group ): string {
  */
 function get_device_label( OD_URL_Metric_Group $group ): string {
 	if ( $group->get_minimum_viewport_width() === 0 ) {
-		return __( 'mobile', 'optimization-detective-admin-ui' );
+		return __( 'mobile', 'od-admin-ui' );
 	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
-		return __( 'desktop', 'optimization-detective-admin-ui' );
+		return __( 'desktop', 'od-admin-ui' );
 	} elseif ( $group->get_minimum_viewport_width() > 600 ) {
-		return __( 'tablet', 'optimization-detective-admin-ui' );
+		return __( 'tablet', 'od-admin-ui' );
 	} else {
-		return __( 'phablet', 'optimization-detective-admin-ui' );
+		return __( 'phablet', 'od-admin-ui' );
 	}
 }
 
@@ -328,7 +328,7 @@ add_action(
 	static function (): void {
 		add_meta_box(
 			'od_url_metrics_big_metabox',
-			__( 'Data', 'optimization-detective-admin-ui' ),
+			__( 'Data', 'od-admin-ui' ),
 			static function ( WP_Post $post ): void {
 				try {
 					$timezone = new DateTimeZone( get_option( 'timezone_string' ) );
@@ -345,46 +345,46 @@ add_action(
 
 				$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
 
-				$true_label  = __( 'true', 'optimization-detective-admin-ui' );
-				$false_label = __( 'false', 'optimization-detective-admin-ui' );
+				$true_label  = __( 'true', 'od-admin-ui' );
+				$false_label = __( 'false', 'od-admin-ui' );
 				?>
 				<table>
 					<tr>
-						<th><?php esc_html_e( 'Is every group complete:', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Is every group complete:', 'od-admin-ui' ); ?></th>
 						<td><?php echo esc_html( $url_metrics_collection->is_every_group_complete() ? $true_label : $false_label ); ?></td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Is every group populated:', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Is every group populated:', 'od-admin-ui' ); ?></th>
 						<td><?php echo esc_html( $url_metrics_collection->is_every_group_populated() ? $true_label : $false_label ); ?></td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Is any group populated:', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Is any group populated:', 'od-admin-ui' ); ?></th>
 						<td><?php echo esc_html( $url_metrics_collection->is_any_group_populated() ? $true_label : $false_label ); ?></td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Common LCP element:', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Common LCP element:', 'od-admin-ui' ); ?></th>
 						<td>
 							<?php
 							$lcp_element = $url_metrics_collection->get_common_lcp_element();
 							if ( null !== $lcp_element ) {
 								echo '<code>' . esc_html( $lcp_element->get_xpath() ) . '</code>';
 							} else {
-								esc_html_e( 'none', 'optimization-detective-admin-ui' );
+								esc_html_e( 'none', 'od-admin-ui' );
 							}
 							?>
 						</td>
 					</tr>
 				</table>
 
-				<h1><?php esc_html_e( 'Viewport Groups', 'optimization-detective-admin-ui' ); ?></h1>
+				<h1><?php esc_html_e( 'Viewport Groups', 'od-admin-ui' ); ?></h1>
 				<table>
 					<tr>
 						<th colspan="2"></th>
-						<th><?php esc_html_e( 'Min.', 'optimization-detective-admin-ui' ); ?></th>
-						<th><?php esc_html_e( 'Max.', 'optimization-detective-admin-ui' ); ?></th>
-						<th><?php esc_html_e( 'Count', 'optimization-detective-admin-ui' ); ?></th>
-						<th><?php esc_html_e( 'Complete', 'optimization-detective-admin-ui' ); ?></th>
-						<th><?php esc_html_e( 'LCP Element', 'optimization-detective-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Min.', 'od-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Max.', 'od-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Count', 'od-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'Complete', 'od-admin-ui' ); ?></th>
+						<th><?php esc_html_e( 'LCP Element', 'od-admin-ui' ); ?></th>
 					</tr>
 					<?php foreach ( $url_metrics_collection as $group ) : ?>
 						<tr>
@@ -412,7 +412,7 @@ add_action(
 								if ( null !== $lcp_element ) {
 									echo '<code>' . esc_html( $lcp_element->get_xpath() ) . '</code>';
 								} else {
-									esc_html_e( 'unknown', 'optimization-detective-admin-ui' );
+									esc_html_e( 'unknown', 'od-admin-ui' );
 								}
 								?>
 							</td>
@@ -441,7 +441,7 @@ add_action(
 					printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url_metric->get_url() ), esc_html__( 'View', 'default' ) );
 					echo ' | ';
 					$group = $url_metrics_collection->get_group_for_viewport_width( $url_metric->get_viewport_width() );
-					esc_html_e( 'Viewport Group:', 'optimization-detective-admin-ui' );
+					esc_html_e( 'Viewport Group:', 'od-admin-ui' );
 					echo ' ';
 					if ( $group->get_minimum_viewport_width() === 0 ) {
 						echo esc_html( '≤' . $group->get_maximum_viewport_width() . 'px' );
