@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Optimization Detective Admin UI
- * Plugin URI: https://gist.github.com/westonruter/004094f1d49b8b98492deb3dd20bc55e
+ * Plugin URI: https://github.com/westonruter/od-admin-ui
  * Description: Provides an admin UI to inspect URL Metrics from the Optimization Detective plugin.
  * Requires at least: 6.5
  * Requires PHP: 7.2
@@ -12,8 +12,8 @@
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
  * Text Domain: od-admin-ui
- * Update URI: https://gist.github.com/westonruter/004094f1d49b8b98492deb3dd20bc55e
- * Gist Plugin URI: https://gist.github.com/westonruter/004094f1d49b8b98492deb3dd20bc55e
+ * Update URI: https://github.com/westonruter/od-admin-ui
+ * GitHub Plugin URI: https://github.com/westonruter/od-admin-ui
  *
  * @package OptimizationDetective\AdminUi
  */
