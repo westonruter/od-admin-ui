@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.3.3
+ * Version: 0.3.4
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -343,7 +343,11 @@ add_action(
 					}
 				);
 
-				$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
+				if ( version_compare( OPTIMIZATION_DETECTIVE_VERSION, '0.9.0', '>=' ) ) {
+					$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, md5( '' ), od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
+				} else {
+					$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
+				}
 
 				$true_label  = __( 'true', 'od-admin-ui' );
 				$false_label = __( 'false', 'od-admin-ui' );
