@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.3.5
+ * Version: 0.4.0
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -50,6 +50,7 @@ add_filter(
 	static function ( $columns ) {
 		unset( $columns['date'] );
 		$columns['post_name'] = __( 'Slug', 'default' );
+		$columns['max_size']  = __( 'Size', 'od-admin-ui' );
 		$columns['modified']  = __( 'Modified', 'od-admin-ui' );
 		$columns['date']      = __( 'Created', 'od-admin-ui' );
 		return $columns;
@@ -60,6 +61,7 @@ add_filter(
 add_action(
 	'manage_' . POST_TYPE_SLUG . '_posts_custom_column',
 	static function ( $column, $post_id ): void {
+		$post = get_post( $post_id );
 		if ( 'modified' === $column ) {
 			echo esc_html(
 				sprintf(
@@ -73,11 +75,31 @@ add_action(
 			);
 		} elseif ( 'post_name' === $column ) {
 			echo '<code>' . esc_html( get_post_field( 'post_name', $post_id ) ) . '</code>';
+		} elseif ( 'max_size' === $column && $post instanceof WP_Post ) {
+			$max_size    = 0;
+			$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
+			foreach ( $url_metrics as $url_metric ) {
+				$max_size = max( $max_size, strlen( (string) wp_json_encode( $url_metric ) ) );
+			}
+			print_url_metric_size_meter_markup( $max_size );
 		}
 	},
 	10,
 	2
 );
+
+function print_url_metric_size_meter_markup( int $length ): void {
+	$limit_kib   = 64;
+	$limit_bytes = $limit_kib * 1024;
+	printf(
+		'<meter value="%d" min="0" max="%d" optimum="%d" high="%d" title="%s"></meter>',
+		$length,
+		$limit_bytes,
+		0.25 * $limit_bytes,
+		0.5 * $limit_bytes,
+		esc_attr( sprintf( '%s bytes (%d%% of %d KiB limit)', number_format_i18n( $length ), ceil( ( $length / $limit_bytes ) * 100 ), $limit_kib ) )
+	);
+}
 
 // Hide "Published" from the Date column since URL Metrics only ever have this post status.
 add_filter(
@@ -218,15 +240,19 @@ add_action(
 	}
 );
 
-add_action(
-	'admin_head-post.php',
-	static function (): void {
-		global $typenow;
-		if ( POST_TYPE_SLUG !== $typenow ) {
-			return;
+/**
+ * Print styles.
+ */
+function print_styles(): void {
+	global $typenow;
+	if ( POST_TYPE_SLUG !== $typenow ) {
+		return;
+	}
+	?>
+	<style>
+		.fixed .column-max_size {
+			width: 10%;
 		}
-		?>
-		<style>
 		#titlediv #title {
 			border: none;
 			background-color: transparent;
@@ -257,11 +283,12 @@ add_action(
 		.url-metric:nth-child(odd) {
 			background-color: #f2f2f2; /* Light gray for odd rows */
 		}
-		</style>
-		<?php
-	},
-	100
-);
+	</style>
+	<?php
+}
+
+add_action( 'admin_head-post.php', __NAMESPACE__ . '\print_styles', 100 );
+add_action( 'admin_head-edit.php', __NAMESPACE__ . '\print_styles', 100 );
 
 /**
  * Gets device slug.
@@ -445,10 +472,8 @@ add_action(
 					echo ' | ';
 					printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url_metric->get_url() ), esc_html__( 'View', 'default' ) );
 					echo ' | ';
-					echo 'Size: ';
 					$length = strlen( (string) wp_json_encode( $url_metric ) );
-					echo esc_html( number_format_i18n( $length ) );
-					echo esc_html( sprintf( ' (%d%% of 64 KiB limit)', ceil( ( $length / ( 64 * 1024 ) ) * 100 ) ) );
+					print_url_metric_size_meter_markup( $length );
 					echo ' | ';
 					$group = $url_metrics_collection->get_group_for_viewport_width( $url_metric->get_viewport_width() );
 					esc_html_e( 'Viewport Group:', 'od-admin-ui' );
