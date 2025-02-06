@@ -272,7 +272,7 @@ add_action(
 function get_device_slug( OD_URL_Metric_Group $group ): string {
 	if ( $group->get_minimum_viewport_width() === 0 ) {
 		return 'mobile';
-	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX || $group->get_maximum_viewport_width() === null ) {
 		return 'desktop';
 	} elseif ( $group->get_minimum_viewport_width() > 600 ) {
 		return 'tablet';
@@ -290,7 +290,7 @@ function get_device_slug( OD_URL_Metric_Group $group ): string {
 function get_device_label( OD_URL_Metric_Group $group ): string {
 	if ( $group->get_minimum_viewport_width() === 0 ) {
 		return __( 'mobile', 'od-admin-ui' );
-	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX || $group->get_maximum_viewport_width() === null ) {
 		return __( 'desktop', 'od-admin-ui' );
 	} elseif ( $group->get_minimum_viewport_width() > 600 ) {
 		return __( 'tablet', 'od-admin-ui' );
@@ -306,7 +306,7 @@ function get_device_label( OD_URL_Metric_Group $group ): string {
  * @return string Emoji.
  */
 function get_device_emoji( OD_URL_Metric_Group $group ): string {
-	if ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+	if ( $group->get_maximum_viewport_width() === PHP_INT_MAX || $group->get_maximum_viewport_width() === null ) {
 		return '💻';
 	} else {
 		return '📱';
@@ -403,7 +403,7 @@ add_action(
 								<?php echo esc_html( (string) $group->get_minimum_viewport_width() ); ?>
 							</td>
 							<td>
-								<?php echo esc_html( $group->get_maximum_viewport_width() === PHP_INT_MAX ? '∞' : (string) $group->get_maximum_viewport_width() ); ?>
+								<?php echo esc_html( $group->get_maximum_viewport_width() === PHP_INT_MAX || $group->get_maximum_viewport_width() === null ? '∞' : (string) $group->get_maximum_viewport_width() ); ?>
 							</td>
 							<td>
 								<?php echo esc_html( (string) $group->count() ); ?>
@@ -449,8 +449,8 @@ add_action(
 					esc_html_e( 'Viewport Group:', 'od-admin-ui' );
 					echo ' ';
 					if ( $group->get_minimum_viewport_width() === 0 ) {
-						echo esc_html( '≤' . $group->get_maximum_viewport_width() . 'px' );
-					} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX ) {
+						echo esc_html( '≤' . $group->get_maximum_viewport_width() . 'px' ); // TODO: Technically get_maximum_viewport_width could be null if there are no breakpoints, but this is unlikely.
+					} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX || $group->get_maximum_viewport_width() === null ) {
 						echo esc_html( '≥' . $group->get_minimum_viewport_width() . 'px' );
 					} else {
 						echo esc_html( $group->get_minimum_viewport_width() . 'px – ' . $group->get_maximum_viewport_width() . 'px' );
