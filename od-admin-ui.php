@@ -445,6 +445,11 @@ add_action(
 					echo ' | ';
 					printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url_metric->get_url() ), esc_html__( 'View', 'default' ) );
 					echo ' | ';
+					echo 'Size: ';
+					$length = strlen( (string) wp_json_encode( $url_metric ) );
+					echo esc_html( number_format_i18n( $length ) );
+					echo esc_html( sprintf( ' (%d%% of 64 KiB limit)', ceil( ( $length / ( 64 * 1024 ) ) * 100 ) ) );
+					echo ' | ';
 					$group = $url_metrics_collection->get_group_for_viewport_width( $url_metric->get_viewport_width() );
 					esc_html_e( 'Viewport Group:', 'od-admin-ui' );
 					echo ' ';
