@@ -88,16 +88,29 @@ add_action(
 	2
 );
 
+/**
+ * Print the METER markup.
+ *
+ * @param int $length URL Metric size.
+ */
 function print_url_metric_size_meter_markup( int $length ): void {
 	$limit_kib   = 64;
 	$limit_bytes = $limit_kib * 1024;
 	printf(
-		'<meter value="%d" min="0" max="%d" optimum="%d" high="%d" title="%s"></meter>',
-		$length,
-		$limit_bytes,
-		0.25 * $limit_bytes,
-		0.5 * $limit_bytes,
-		esc_attr( sprintf( '%s bytes (%d%% of %d KiB limit)', number_format_i18n( $length ), ceil( ( $length / $limit_bytes ) * 100 ), $limit_kib ) )
+		'<meter value="%s" min="0" max="%s" optimum="%s" high="%s" title="%s"></meter>',
+		esc_attr( (string) $length ),
+		esc_attr( (string) $limit_bytes ),
+		esc_attr( (string) ( $limit_bytes * 0.25 ) ),
+		esc_attr( (string) ( $limit_bytes * 0.5 ) ),
+		esc_attr(
+			sprintf(
+				/* translators: 1: URL Metric size in bytes, 2: percentage of total budget, 3: maximum allowed in KiB */
+				__( '%1$s bytes (%2$s%% of %3$s KiB limit)', 'od-admin-ui' ),
+				number_format_i18n( $length ),
+				ceil( ( $length / $limit_bytes ) * 100 ),
+				$limit_kib
+			)
+		)
 	);
 }
 
