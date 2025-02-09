@@ -607,8 +607,9 @@ add_action(
 			} else {
 				$class_name = 'od-empty';
 			}
+			$class_name .= sprintf( ' od-viewport-min-width-%d', $group->get_minimum_viewport_width() );
 
-			$tooltip = get_device_slug( $group ) . ': ' . $group->count() . '/' . $group->get_sample_size();
+			$tooltip = get_device_label( $group ) . ': ' . $group->count() . '/' . $group->get_sample_size();
 			if ( $is_complete ) {
 				$tooltip .= sprintf( ', %s', __( 'complete', 'od-admin-ui' ) );
 			}
@@ -664,6 +665,7 @@ function print_admin_bar_styles(): void {
 			height: 20px;
 			border: solid 1px black;
 			background-color: gray;
+			opacity: 0.5;
 		}
 		#wpadminbar .od-viewport-group-indicator.od-populated {
 			background-color: orange;
@@ -671,8 +673,10 @@ function print_admin_bar_styles(): void {
 		#wpadminbar .od-viewport-group-indicator.od-complete {
 			background-color: lime;
 		}
-		#wpadminbar #wp-admin-bar-od-url-metrics:hover .od-viewport-group-indicator:not(:hover) {
-			opacity: 0.5;
+
+		#wpadminbar #wp-admin-bar-od-url-metrics .od-viewport-group-indicator:hover {
+			opacity: 1;
+			outline: solid 2px currentColor;
 		}
 		@media screen and (max-width: 782px) {
 			#wpadminbar #wp-admin-bar-od-url-metrics .ab-icon {
@@ -686,6 +690,26 @@ function print_admin_bar_styles(): void {
 				width: 8px;
 			}
 		}
+		<?php
+		// TODO: Nice if we could reuse the OD_URL_Metric_Group_Collection here!
+		$width_tuples = array();
+		$min_width    = 0;
+		foreach ( od_get_breakpoint_max_widths() as $max_width ) {
+			$width_tuples[] = array( $min_width, $max_width );
+			$min_width      = $max_width;
+		}
+		$width_tuples[] = array( $min_width, null );
+
+		foreach ( $width_tuples as list( $viewport_min_width, $viewport_max_width ) ) {
+			?>
+			@media screen and <?php echo od_generate_media_query( $viewport_min_width, $viewport_max_width ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> {
+				#wpadminbar #wp-admin-bar-od-url-metrics:not(:has(.od-viewport-group-indicator:hover)) .od-viewport-group-indicator.od-viewport-min-width-<?php echo $viewport_min_width; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> {
+					opacity: 1;
+				}
+			}
+			<?php
+		}
+		?>
 	</style>
 	<?php
 }
