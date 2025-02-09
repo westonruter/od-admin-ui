@@ -661,7 +661,7 @@ function print_admin_bar_styles(): void {
 			display: inline-block;
 			vertical-align: middle;
 			width: 6px;
-			height: 1em;
+			height: 20px;
 			border: solid 1px black;
 			background-color: gray;
 		}
@@ -673,6 +673,18 @@ function print_admin_bar_styles(): void {
 		}
 		#wpadminbar #wp-admin-bar-od-url-metrics:hover .od-viewport-group-indicator:not(:hover) {
 			opacity: 0.5;
+		}
+		@media screen and (max-width: 782px) {
+			#wpadminbar #wp-admin-bar-od-url-metrics .ab-icon {
+				display: none;
+			}
+			#wpadminbar #wp-admin-bar-od-url-metrics {
+				display: block;
+			}
+			#wpadminbar .od-viewport-group-indicator {
+				height: 32px;
+				width: 8px;
+			}
 		}
 	</style>
 	<?php
