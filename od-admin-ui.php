@@ -23,6 +23,7 @@ namespace OptimizationDetective\AdminUi;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use OD_Tag_Visitor_Registry;
 use OD_URL_Metric;
 use OD_URL_Metric_Group;
 use OD_URL_Metric_Group_Collection;
@@ -479,7 +480,7 @@ add_action(
 
 					echo '<summary>';
 					printf( '<time datetime="%s" title="%s">', esc_attr( $date->format( 'c' ) ), esc_attr( $date->format( 'Y-m-d H:i:s.u T' ) ) );
-					// translators: %s: human-readable time difference.
+					/* translators: %s: human-readable time difference. */
 					$formatted_date = sprintf( __( '%s ago', 'default' ), human_time_diff( (int) $url_metric->get_timestamp() ) );
 					echo esc_html( $formatted_date );
 					echo '</time>';
@@ -566,23 +567,40 @@ add_action(
 			}
 		);
 
-		$etag                   = count( $url_metrics ) > 0 ? $url_metrics[0]->get_etag() : md5( '' );
-		$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, $etag, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
+		// TODO: We should not have to re-construct this.
+		$tag_visitor_registry = new OD_Tag_Visitor_Registry();
+		do_action( 'od_register_tag_visitors', $tag_visitor_registry );
+		$current_etag           = od_get_current_url_metrics_etag( $tag_visitor_registry, $GLOBALS['wp_query'], od_get_current_theme_template() );
+		$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, $current_etag, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
 
 		$args = array(
 			'id'    => 'od-url-metrics',
-			'title' => '<span class="ab-icon dashicons ' . DASHICON_CLASS . '"></span>' . __( 'URL Metrics', 'od-admin-ui' ),
+			'title' => '<span class="ab-icon dashicons ' . DASHICON_CLASS . '"></span><span class="ab-label">' . __( 'URL Metrics', 'od-admin-ui' ) . '</span>',
 			'href'  => $edit_link,
 		);
 
+		$all_complete = true;
+
 		$args['title'] .= ' ';
 		foreach ( $url_metrics_collection as $group ) {
-			if (
+			$etags       = array_values(
+				array_unique(
+					array_map(
+						static function ( OD_URL_Metric $url_metric ) {
+							return $url_metric->get_etag();
+						},
+						iterator_to_array( $group )
+					)
+				)
+			);
+			$is_complete = (
 				$group->is_complete()
 				||
 				// Handle case using the DevMode plugin when the freshness TTL is zeroed out.
-				( $group->get_freshness_ttl() === 0 && $group->count() === $group->get_sample_size() )
-			) {
+				( $group->get_freshness_ttl() === 0 && $group->count() === $group->get_sample_size() && isset( $etags[0] ) && $etags[0] === $current_etag )
+			);
+			$all_complete = $all_complete && $is_complete;
+			if ( $is_complete ) {
 				$class_name = 'od-complete';
 			} elseif ( $group->count() > 0 ) {
 				$class_name = 'od-populated';
@@ -591,8 +609,20 @@ add_action(
 			}
 
 			$tooltip = get_device_slug( $group ) . ': ' . $group->count() . '/' . $group->get_sample_size();
-			if ( $group->is_complete() ) {
-				$tooltip .= sprintf( ' (%s)', __( 'Complete', 'od-admin-ui' ) );
+			if ( $is_complete ) {
+				$tooltip .= sprintf( ', %s', __( 'complete', 'od-admin-ui' ) );
+			}
+
+			$group_url_metrics = iterator_to_array( $group );
+			usort(
+				$group_url_metrics,
+				static function ( OD_URL_Metric $a, OD_URL_Metric $b ): int {
+					return $b->get_timestamp() <=> $a->get_timestamp();
+				}
+			);
+			if ( isset( $group_url_metrics[0] ) ) {
+				/* translators: %s: human-readable time difference. */
+				$tooltip .= ', ' . sprintf( __( '%s ago', 'default' ), human_time_diff( (int) $group_url_metrics[0]->get_timestamp() ) );
 			}
 
 			$args['title'] .= sprintf(
@@ -602,12 +632,7 @@ add_action(
 			);
 		}
 
-		if (
-			$url_metrics_collection->is_every_group_complete()
-			||
-			// Case for Dev Mode plugin.
-			( $url_metrics_collection->is_every_group_populated() && od_get_url_metrics_breakpoint_sample_size() === 1 && od_get_url_metric_freshness_ttl() === 0 )
-		) {
+		if ( $all_complete ) {
 			$args['meta']['title'] = __( 'Every viewport group is complete, being fully populated without any stale URL metrics.', 'od-admin-ui' );
 		} elseif ( $url_metrics_collection->is_every_group_populated() ) {
 			$args['meta']['title'] = __( 'Every viewport group is populated although some URL Metrics are stale or not enough samples have been collected.', 'od-admin-ui' );
