@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.4.0
+ * Version: 0.5.0
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -23,14 +23,18 @@ namespace OptimizationDetective\AdminUi;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use OD_URL_Metric;
 use OD_URL_Metric_Group;
 use OD_URL_Metric_Group_Collection;
 use OD_URL_Metrics_Post_Type;
 use WP_Post;
 use WP_Post_Type;
 use WP_Screen;
+use WP_Admin_Bar;
 
 const POST_TYPE_SLUG = 'od_url_metrics';
+
+const DASHICON_CLASS = 'dashicons-info-outline';
 
 add_action(
 	'registered_post_type_' . POST_TYPE_SLUG,
@@ -39,6 +43,7 @@ add_action(
 		$post_type_object->show_in_menu      = true;
 		$post_type_object->_edit_link        = 'post.php?post=%d';
 		$post_type_object->cap->create_posts = 'do_not_allow';
+		$post_type_object->menu_icon         = DASHICON_CLASS;
 	},
 	10,
 	2
@@ -534,4 +539,76 @@ add_action(
 		</script>
 		<?php
 	}
+);
+
+add_action(
+	'admin_bar_menu',
+	static function ( WP_Admin_Bar $wp_admin_bar ): void {
+		if ( ! od_can_optimize_response() ) {
+			return;
+		}
+
+		$slug = od_get_url_metrics_slug( od_get_normalized_query_vars() );
+		$post = OD_URL_Metrics_Post_Type::get_post( $slug );
+		if ( ! ( $post instanceof WP_Post ) ) {
+			return;
+		}
+		$edit_link = get_edit_post_link( $post, 'raw' );
+		if ( null === $edit_link ) {
+			return;
+		}
+
+		$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
+		usort(
+			$url_metrics,
+			static function ( OD_URL_Metric $a, OD_URL_Metric $b ): int {
+				return $b->get_timestamp() <=> $a->get_timestamp();
+			}
+		);
+
+		$etag                   = count( $url_metrics ) > 0 ? $url_metrics[0]->get_etag() : md5( '' );
+		$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, $etag, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
+
+		$args = array(
+			'id'    => 'od-url-metrics',
+			'title' => '<span class="ab-icon dashicons ' . DASHICON_CLASS . '"></span>' . __( 'URL Metrics', 'od-admin-ui' ),
+			'href'  => $edit_link,
+		);
+
+		$args['title'] .= ' ';
+		foreach ( $url_metrics_collection as $group ) {
+			$style = 'display:inline-block; vertical-align: middle; width: 5px; height: 1em; border: solid 1px black;';
+			if ( $group->is_complete() ) {
+				$style .= 'background:lime;';
+			} elseif ( $group->count() > 0 ) {
+				$style .= 'background:orange;';
+			} else {
+				$style .= 'background:gray;';
+			}
+
+			$tooltip = get_device_slug( $group ) . ': ' . $group->count() . '/' . $group->get_sample_size();
+			if ( $group->is_complete() ) {
+				$tooltip .= sprintf( ' (%s)', __( 'Complete', 'od-admin-ui' ) );
+			}
+
+			$args['title'] .= sprintf(
+				'<span style="%s" title="%s"></span>',
+				esc_attr( $style ),
+				esc_attr( $tooltip )
+			);
+		}
+
+		if ( $url_metrics_collection->is_every_group_complete() ) {
+			$args['meta']['title'] = __( 'Every viewport group is complete, being fully populated without any stale URL metrics.', 'od-admin-ui' );
+		} elseif ( $url_metrics_collection->is_every_group_populated() ) {
+			$args['meta']['title'] = __( 'Every viewport group is populated although some URL Metrics are stale or not enough samples have been collected.', 'od-admin-ui' );
+		} elseif ( $url_metrics_collection->is_any_group_populated() ) {
+			$args['meta']['title'] = __( 'Not every viewport group has been populated.', 'od-admin-ui' );
+		} else {
+			$args['meta']['title'] = __( 'No URL Metrics have been collected yet.', 'od-admin-ui' );
+		}
+
+		$wp_admin_bar->add_node( $args );
+	},
+	100
 );
