@@ -577,13 +577,17 @@ add_action(
 
 		$args['title'] .= ' ';
 		foreach ( $url_metrics_collection as $group ) {
-			$style = 'display:inline-block; vertical-align: middle; width: 5px; height: 1em; border: solid 1px black;';
-			if ( $group->is_complete() ) {
-				$style .= 'background:lime;';
+			if (
+				$group->is_complete()
+				||
+				// Handle case using the DevMode plugin when the freshness TTL is zeroed out.
+				( $group->get_freshness_ttl() === 0 && $group->count() === $group->get_sample_size() )
+			) {
+				$class_name = 'od-complete';
 			} elseif ( $group->count() > 0 ) {
-				$style .= 'background:orange;';
+				$class_name = 'od-populated';
 			} else {
-				$style .= 'background:gray;';
+				$class_name = 'od-empty';
 			}
 
 			$tooltip = get_device_slug( $group ) . ': ' . $group->count() . '/' . $group->get_sample_size();
@@ -592,13 +596,18 @@ add_action(
 			}
 
 			$args['title'] .= sprintf(
-				'<span style="%s" title="%s"></span>',
-				esc_attr( $style ),
+				'<span class="%s" title="%s"></span>',
+				esc_attr( "od-viewport-group-indicator $class_name" ),
 				esc_attr( $tooltip )
 			);
 		}
 
-		if ( $url_metrics_collection->is_every_group_complete() ) {
+		if (
+			$url_metrics_collection->is_every_group_complete()
+			||
+			// Case for Dev Mode plugin.
+			( $url_metrics_collection->is_every_group_populated() && od_get_url_metrics_breakpoint_sample_size() === 1 && od_get_url_metric_freshness_ttl() === 0 )
+		) {
 			$args['meta']['title'] = __( 'Every viewport group is complete, being fully populated without any stale URL metrics.', 'od-admin-ui' );
 		} elseif ( $url_metrics_collection->is_every_group_populated() ) {
 			$args['meta']['title'] = __( 'Every viewport group is populated although some URL Metrics are stale or not enough samples have been collected.', 'od-admin-ui' );
@@ -609,6 +618,37 @@ add_action(
 		}
 
 		$wp_admin_bar->add_node( $args );
+		add_action( 'wp_footer', __NAMESPACE__ . '\print_admin_bar_styles' );
 	},
 	100
 );
+
+/**
+ * Print admin bar styles.
+ */
+function print_admin_bar_styles(): void {
+	if ( ! is_admin_bar_showing() ) {
+		return;
+	}
+	?>
+	<style>
+		#wpadminbar .od-viewport-group-indicator {
+			display: inline-block;
+			vertical-align: middle;
+			width: 6px;
+			height: 1em;
+			border: solid 1px black;
+			background-color: gray;
+		}
+		#wpadminbar .od-viewport-group-indicator.od-populated {
+			background-color: orange;
+		}
+		#wpadminbar .od-viewport-group-indicator.od-complete {
+			background-color: lime;
+		}
+		#wpadminbar #wp-admin-bar-od-url-metrics:hover .od-viewport-group-indicator:not(:hover) {
+			opacity: 0.5;
+		}
+	</style>
+	<?php
+}
