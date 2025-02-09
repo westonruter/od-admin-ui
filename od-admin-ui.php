@@ -484,7 +484,7 @@ add_action(
 					echo esc_html( $formatted_date );
 					echo '</time>';
 					echo ' | ';
-					printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url_metric->get_url() ), esc_html__( 'View', 'default' ) );
+					printf( '<a href="%s">%s</a>', esc_url( $url_metric->get_url() ), esc_html__( 'View', 'default' ) );
 					echo ' | ';
 					$length = strlen( (string) wp_json_encode( $url_metric ) );
 					print_url_metric_size_meter_markup( $length );
