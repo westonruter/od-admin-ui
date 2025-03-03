@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.5.0
+ * Version: 0.5.1
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -320,7 +320,7 @@ function get_device_slug( OD_URL_Metric_Group $group ): string {
 		return 'mobile';
 	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX || $group->get_maximum_viewport_width() === null ) {
 		return 'desktop';
-	} elseif ( $group->get_minimum_viewport_width() > 600 ) {
+	} elseif ( $group->get_minimum_viewport_width() >= 600 ) {
 		return 'tablet';
 	} else {
 		return 'phablet';
@@ -338,7 +338,7 @@ function get_device_label( OD_URL_Metric_Group $group ): string {
 		return __( 'mobile', 'od-admin-ui' );
 	} elseif ( $group->get_maximum_viewport_width() === PHP_INT_MAX || $group->get_maximum_viewport_width() === null ) {
 		return __( 'desktop', 'od-admin-ui' );
-	} elseif ( $group->get_minimum_viewport_width() > 600 ) {
+	} elseif ( $group->get_minimum_viewport_width() >= 600 ) {
 		return __( 'tablet', 'od-admin-ui' );
 	} else {
 		return __( 'phablet', 'od-admin-ui' );
