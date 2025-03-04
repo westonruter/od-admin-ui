@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.5.1
+ * Version: 0.5.2
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -382,12 +382,6 @@ add_action(
 					$timezone = null;
 				}
 				$url_metrics = OD_URL_Metrics_Post_Type::get_url_metrics_from_post( $post );
-				usort(
-					$url_metrics,
-					static function ( $a, $b ) {
-						return $b->get_timestamp() <=> $a->get_timestamp();
-					}
-				);
 
 				$etag                   = count( $url_metrics ) > 0 ? $url_metrics[0]->get_etag() : md5( '' );
 				$url_metrics_collection = new OD_URL_Metric_Group_Collection( $url_metrics, $etag, od_get_breakpoint_max_widths(), od_get_url_metrics_breakpoint_sample_size(), od_get_url_metric_freshness_ttl() );
@@ -470,6 +464,12 @@ add_action(
 				<h1><?php esc_html_e( 'URL Metrics', 'optimization-detective' ); ?></h1>
 				<?php
 
+				usort(
+					$url_metrics,
+					static function ( $a, $b ) {
+						return $b->get_timestamp() <=> $a->get_timestamp();
+					}
+				);
 				foreach ( $url_metrics as $url_metric ) {
 					$date = DateTime::createFromFormat( 'U.u', (string) $url_metric->get_timestamp() );
 					assert( $date instanceof DateTime );
