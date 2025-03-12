@@ -656,8 +656,9 @@ function populate_admin_bar_item( WP_Admin_Bar $wp_admin_bar, OD_Template_Optimi
 	}
 
 	$wp_admin_bar->add_node( $args );
+
 	add_action(
-		'wp_footer',
+		'wp_before_admin_bar_render',
 		static function () use ( $context ): void {
 			print_admin_bar_styles( $context );
 		}
