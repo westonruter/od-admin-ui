@@ -20,8 +20,6 @@ export default function ( data ) {
 	);
 	const adminBarItemLink = adminBarItem.querySelector( 'a' );
 	adminBarItemLink.title = data.tooltip;
-	const viewportIndicatorsContainer =
-		adminBarItem.querySelector( '.od-url-metrics' );
 
 	adminBarItem.classList.remove( 'od-url-metrics-loading' );
 
