@@ -543,36 +543,50 @@ add_action(
 );
 
 add_action(
-	'od_start_template_optimization',
-	static function ( OD_Template_Optimization_Context $context ): void {
-		add_action(
-			'admin_bar_menu',
-			static function ( WP_Admin_Bar $wp_admin_bar ) use ( $context ): void {
-				populate_admin_bar_item( $wp_admin_bar, $context );
-			},
-			100
-		);
-	}
+	'admin_bar_menu',
+	static function ( WP_Admin_Bar $wp_admin_bar ): void {
+		if ( od_can_optimize_response() ) {
+			create_admin_bar_item( $wp_admin_bar );
+			add_action( 'od_start_template_optimization', __NAMESPACE__ . '\populate_admin_bar_item' );
+		}
+	},
+	100
 );
 
 /**
  * Populates admin bar item.
  *
- * @param WP_Admin_Bar                     $wp_admin_bar Admin bar.
- * @param OD_Template_Optimization_Context $context      Template optimization context.
+ * @param WP_Admin_Bar $wp_admin_bar Admin bar.
  */
-function populate_admin_bar_item( WP_Admin_Bar $wp_admin_bar, OD_Template_Optimization_Context $context ): void {
-	if ( null === $context->url_metrics_id ) {
-		return;
-	}
-	$post = get_post( $context->url_metrics_id );
-	if ( ! ( $post instanceof WP_Post ) ) {
-		return;
-	}
+function create_admin_bar_item( WP_Admin_Bar $wp_admin_bar ): void {
+	$args = array(
+		'id'    => 'od-url-metrics',
+		'title' => '<span class="ab-icon dashicons ' . DASHICON_CLASS . '"></span><span class="ab-label">' . __( 'URL Metrics', 'od-admin-ui' ) . ' <span class="od-url-metrics"></span></span>',
+		'href'  => '#',
+		'meta'  => array(
+			'title' => __( 'Please wait. Loading page.', 'od-admin-ui' ),
+			'class' => 'od-url-metrics-loading',
+		),
+	);
 
-	$edit_link = get_edit_post_link( $post, 'raw' );
-	if ( null === $edit_link ) {
-		return;
+	$wp_admin_bar->add_node( $args );
+}
+
+/**
+ * Populate admin bar item.
+ *
+ * @param OD_Template_Optimization_Context $context Template optimization context.
+ */
+function populate_admin_bar_item( OD_Template_Optimization_Context $context ): void {
+	$context->append_head_html( '<style>' . get_admin_bar_styles( $context ) . '</style>' );
+
+	$exports = array();
+
+	if ( null !== $context->url_metrics_id ) {
+		$post = get_post( $context->url_metrics_id );
+		if ( $post instanceof WP_Post ) {
+			$exports['edit_post_link'] = get_edit_post_link( $post, 'raw' );
+		}
 	}
 
 	$url_metrics = $context->url_metric_group_collection->get_flattened_url_metrics();
@@ -585,17 +599,18 @@ function populate_admin_bar_item( WP_Admin_Bar $wp_admin_bar, OD_Template_Optimi
 
 	$url_metrics_collection = $context->url_metric_group_collection;
 
-	$args = array(
-		'id'    => 'od-url-metrics',
-		'title' => '<span class="ab-icon dashicons ' . DASHICON_CLASS . '"></span><span class="ab-label">' . __( 'URL Metrics', 'od-admin-ui' ) . '</span>',
-		'href'  => $edit_link,
-	);
-
 	$all_complete = true;
 
-	$args['title'] .= ' ';
+	$exports['viewport_statuses'] = array();
 	foreach ( $url_metrics_collection as $group ) {
-		$etags       = array_values(
+		$viewport_status = array(
+			'min_width'     => $group->get_minimum_viewport_width(),
+			'count'         => $group->count(),
+			'device_label'  => get_device_label( $group ),
+			'sample_size'   => $group->get_sample_size(),
+			'last_modified' => null,
+		);
+		$etags           = array_values(
 			array_unique(
 				array_map(
 					static function ( OD_URL_Metric $url_metric ) {
@@ -605,26 +620,15 @@ function populate_admin_bar_item( WP_Admin_Bar $wp_admin_bar, OD_Template_Optimi
 				)
 			)
 		);
-		$is_complete = (
+		$is_complete     = (
 			$group->is_complete()
 			||
 			// Handle case using the DevMode plugin when the freshness TTL is zeroed out.
 			( $group->get_freshness_ttl() === 0 && $group->count() === $group->get_sample_size() && isset( $etags[0] ) && $etags[0] === $url_metrics_collection->get_current_etag() )
 		);
 		$all_complete = $all_complete && $is_complete;
-		if ( $is_complete ) {
-			$class_name = 'od-complete';
-		} elseif ( $group->count() > 0 ) {
-			$class_name = 'od-populated';
-		} else {
-			$class_name = 'od-empty';
-		}
-		$class_name .= sprintf( ' od-viewport-min-width-%d', $group->get_minimum_viewport_width() );
 
-		$tooltip = get_device_label( $group ) . ': ' . $group->count() . '/' . $group->get_sample_size();
-		if ( $is_complete ) {
-			$tooltip .= sprintf( ', %s', __( 'complete', 'od-admin-ui' ) );
-		}
+		$viewport_status['complete'] = $is_complete;
 
 		$group_url_metrics = iterator_to_array( $group );
 		usort(
@@ -633,89 +637,53 @@ function populate_admin_bar_item( WP_Admin_Bar $wp_admin_bar, OD_Template_Optimi
 				return $b->get_timestamp() <=> $a->get_timestamp();
 			}
 		);
+
 		if ( isset( $group_url_metrics[0] ) ) {
 			/* translators: %s: human-readable time difference. */
-			$tooltip .= ', ' . sprintf( __( '%s ago', 'default' ), human_time_diff( (int) $group_url_metrics[0]->get_timestamp() ) );
+			$viewport_status['last_modified'] = sprintf( __( '%s ago', 'default' ), human_time_diff( (int) $group_url_metrics[0]->get_timestamp() ) );
 		}
 
-		$args['title'] .= sprintf(
-			'<span class="%s" title="%s"></span>',
-			esc_attr( "od-viewport-group-indicator $class_name" ),
-			esc_attr( $tooltip )
-		);
+		$exports['viewport_statuses'][] = $viewport_status;
 	}
 
 	if ( $all_complete ) {
-		$args['meta']['title'] = __( 'Every viewport group is complete, being fully populated without any stale URL metrics.', 'od-admin-ui' );
+		$exports['tooltip'] = __( 'Every viewport group is complete, being fully populated without any stale URL metrics.', 'od-admin-ui' );
 	} elseif ( $url_metrics_collection->is_every_group_populated() ) {
-		$args['meta']['title'] = __( 'Every viewport group is populated although some URL Metrics are stale or not enough samples have been collected.', 'od-admin-ui' );
+		$exports['tooltip'] = __( 'Every viewport group is populated although some URL Metrics are stale or not enough samples have been collected.', 'od-admin-ui' );
 	} elseif ( $url_metrics_collection->is_any_group_populated() ) {
-		$args['meta']['title'] = __( 'Not every viewport group has been populated.', 'od-admin-ui' );
+		$exports['tooltip'] = __( 'Not every viewport group has been populated.', 'od-admin-ui' );
 	} else {
-		$args['meta']['title'] = __( 'No URL Metrics have been collected yet.', 'od-admin-ui' );
+		$exports['tooltip'] = __( 'No URL Metrics have been collected yet.', 'od-admin-ui' );
 	}
 
-	$wp_admin_bar->add_node( $args );
-
-	add_action(
-		'wp_before_admin_bar_render',
-		static function () use ( $context ): void {
-			print_admin_bar_styles( $context );
-		}
+	$js = sprintf(
+		'import init from %s; init( %s );',
+		wp_json_encode( plugins_url( 'admin-bar.js', __FILE__ ) ),
+		wp_json_encode( $exports )
 	);
+	$context->append_body_html( '<script type="module">' . $js . '</script>' );
 }
 
 /**
- * Print admin bar styles.
+ * Gets the admin bar styles.
  *
  * @param OD_Template_Optimization_Context $context Context.
+ * @return string CSS.
  */
-function print_admin_bar_styles( OD_Template_Optimization_Context $context ): void {
-	?>
-	<style>
-		#wpadminbar .od-viewport-group-indicator {
-			display: inline-block;
-			vertical-align: middle;
-			width: 6px;
-			height: 20px;
-			border: solid 1px black;
-			background-color: gray;
-			opacity: 0.5;
-		}
-		#wpadminbar .od-viewport-group-indicator.od-populated {
-			background-color: orange;
-		}
-		#wpadminbar .od-viewport-group-indicator.od-complete {
-			background-color: lime;
-		}
-
-		#wpadminbar #wp-admin-bar-od-url-metrics .od-viewport-group-indicator:hover {
-			opacity: 1;
-			outline: solid 2px currentColor;
-		}
-		@media screen and (max-width: 782px) {
-			#wpadminbar #wp-admin-bar-od-url-metrics .ab-icon {
-				display: none;
-			}
-			#wpadminbar #wp-admin-bar-od-url-metrics {
-				display: block;
-			}
-			#wpadminbar .od-viewport-group-indicator {
-				height: 32px;
-				width: 8px;
-			}
-		}
-		<?php
-		foreach ( $context->url_metric_group_collection as $group ) {
-			?>
-			@media screen and <?php echo od_generate_media_query( $group->get_minimum_viewport_width(), $group->get_maximum_viewport_width() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> {
-				#wpadminbar #wp-admin-bar-od-url-metrics:not(:has(.od-viewport-group-indicator:hover)) .od-viewport-group-indicator.od-viewport-min-width-<?php echo (int) $group->get_minimum_viewport_width(); ?> {
-					opacity: 1;
+function get_admin_bar_styles( OD_Template_Optimization_Context $context ): string {
+	$css = (string) file_get_contents( __DIR__ . '/admin-bar.css' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+	foreach ( $context->url_metric_group_collection as $group ) {
+		$css .= sprintf(
+			'
+				@media screen and %s {
+					#wpadminbar #wp-admin-bar-od-url-metrics:not(:has(.od-viewport-group-indicator:hover)) .od-viewport-group-indicator.od-viewport-min-width-%d {
+						opacity: 1;
+					}
 				}
-			}
-			<?php
-		}
-		?>
-	</style>
-	<?php
+			',
+			od_generate_media_query( $group->get_minimum_viewport_width(), $group->get_maximum_viewport_width() ),
+			$group->get_minimum_viewport_width()
+		);
+	}
+	return $css;
 }
