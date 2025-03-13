@@ -46,7 +46,7 @@ export default function ( data ) {
 		if ( viewportStatus.last_modified ) {
 			span.title += ', ' + viewportStatus.last_modified;
 		}
-		viewportIndicatorsContainer.appendChild( span );
+		adminBarItemLink.appendChild( span );
 	}
 
 	if ( data.edit_post_link ) {

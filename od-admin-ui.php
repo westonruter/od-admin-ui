@@ -561,7 +561,7 @@ add_action(
 function create_admin_bar_item( WP_Admin_Bar $wp_admin_bar ): void {
 	$args = array(
 		'id'    => 'od-url-metrics',
-		'title' => '<span class="ab-icon dashicons ' . DASHICON_CLASS . '"></span><span class="ab-label">' . __( 'URL Metrics', 'od-admin-ui' ) . ' <span class="od-url-metrics"></span></span>',
+		'title' => '<span class="ab-icon dashicons ' . DASHICON_CLASS . '"></span><span class="ab-label">' . __( 'URL Metrics', 'od-admin-ui' ) . '</span>',
 		'href'  => '#',
 		'meta'  => array(
 			'title' => __( 'Please wait. Loading page.', 'od-admin-ui' ),

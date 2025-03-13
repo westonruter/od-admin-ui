@@ -3,6 +3,11 @@
 #wpadminbar .od-url-metrics-loading a {
 	cursor: wait;
 }
+
+#wpadminbar #wp-admin-bar-od-url-metrics:has(.od-viewport-group-indicator) .ab-label {
+	margin-right: 5px !important;
+}
+
 #wpadminbar .od-viewport-group-indicator {
 	display: inline-block;
 	vertical-align: middle;
