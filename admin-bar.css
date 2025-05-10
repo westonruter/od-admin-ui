@@ -1,0 +1,42 @@
+
+#wpadminbar .od-url-metrics-loading,
+#wpadminbar .od-url-metrics-loading a {
+	cursor: wait;
+}
+
+#wpadminbar #wp-admin-bar-od-url-metrics:has(.od-viewport-group-indicator) .ab-label {
+	margin-right: 5px !important;
+}
+
+#wpadminbar .od-viewport-group-indicator {
+	display: inline-block;
+	vertical-align: middle;
+	width: 6px;
+	height: 20px;
+	border: solid 1px black;
+	background-color: gray;
+	opacity: 0.5;
+}
+#wpadminbar .od-viewport-group-indicator.od-populated {
+	background-color: orange;
+}
+#wpadminbar .od-viewport-group-indicator.od-complete {
+	background-color: lime;
+}
+
+#wpadminbar #wp-admin-bar-od-url-metrics .od-viewport-group-indicator:hover {
+	opacity: 1;
+	outline: solid 2px currentColor;
+}
+@media screen and (max-width: 782px) {
+	#wpadminbar #wp-admin-bar-od-url-metrics .ab-icon {
+		display: none;
+	}
+	#wpadminbar #wp-admin-bar-od-url-metrics {
+		display: block;
+	}
+	#wpadminbar .od-viewport-group-indicator {
+		height: 32px;
+		width: 8px;
+	}
+}
