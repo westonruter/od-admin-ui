@@ -6,7 +6,7 @@
  * Requires at least: 6.5
  * Requires PHP: 7.2
  * Requires Plugins: optimization-detective
- * Version: 0.5.3
+ * Version: 0.5.4
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: GPLv2 or later
@@ -539,9 +539,9 @@ add_action(
 				'console.log( %s )',
 				wp_json_encode(
 					"[Optimization Detective] Inspect URL Metrics: $edit_link"
-				),
-				array( 'type' => 'module' )
-			)
+				)
+			),
+			array( 'type' => 'module' )
 		);
 	}
 );
