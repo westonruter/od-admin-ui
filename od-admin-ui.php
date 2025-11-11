@@ -14,6 +14,7 @@
  * Text Domain: od-admin-ui
  * Update URI: https://github.com/westonruter/od-admin-ui
  * GitHub Plugin URI: https://github.com/westonruter/od-admin-ui
+ * Primary Branch: main
  *
  * @package OptimizationDetective\AdminUi
  */
